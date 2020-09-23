@@ -1,0 +1,1 @@
+# cupy_fused_kernel_sample
