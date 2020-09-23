@@ -1,6 +1,7 @@
 import cupy as cp
 import numba as nb
 import numpy as np
+import nvtx
 from datetime import datetime
 
 fused_kernel = cp.RawKernel(r'''
@@ -44,23 +45,54 @@ print("[INFO] max relative difference: {}".format(abs((d1 - d2) / d1).max()))
 warmup_iteration = 10
 test_iteration = 50
 
-# warmup
-for i in range(warmup_iteration):
-    d1 = (a**2 + b) * c / d + (e * f) / g
-t1 = datetime.now()
-for i in range(test_iteration):
-    d1 = (a**2 + b) * c / d + (e * f) / g
-t2 = datetime.now()
+with cp.cuda.Device(0) as device:
+    # warmup
+    for i in range(warmup_iteration):
+        d1 = (a**2 + b) * c / d + (e * f) / g
+    device.synchronize()
+    t1 = datetime.now()
+    for i in range(test_iteration):
+        d1 = (a**2 + b) * c / d + (e * f) / g
+    device.synchronize()
+    t2 = datetime.now()
 
-print("[INFO] cupy time:       {} ms".format((t2-t1).total_seconds() * 1000 / test_iteration))
+    print("[INFO] cupy time:       {:.6} ms".format((t2-t1).total_seconds() * 1000 / test_iteration))
 
-# warmup
-for i in range(warmup_iteration):
-    fused_kernel((grid_size,), (block_size, ), (d2, a, b, c, d, e, f, g, data_size_1*data_size_2*data_size_3))
+    # warmup
+    for i in range(warmup_iteration):
+        fused_kernel((grid_size,), (block_size, ), (d2, a, b, c, d, e, f, g, data_size_1*data_size_2*data_size_3))
+        device.synchronize()
 
-t1 = datetime.now()
-for i in range(test_iteration):
-    fused_kernel((grid_size,), (block_size, ), (d2, a, b, c, d, e, f, g, data_size_1*data_size_2*data_size_3))
-t2 = datetime.now()
+    t1 = datetime.now()
+    for i in range(test_iteration):
+        fused_kernel((grid_size,), (block_size, ), (d2, a, b, c, d, e, f, g, data_size_1*data_size_2*data_size_3))
+    device.synchronize()
+    t2 = datetime.now()
 
-print("[INFO] raw kernel time: {} ms".format((t2-t1).total_seconds() * 1000 / test_iteration))
+    print("[INFO] raw kernel time: {:.6} ms".format((t2-t1).total_seconds() * 1000 / test_iteration))
+
+
+    # demo nvtx
+
+    for i in range(warmup_iteration):
+        nvtx.push_range("a**2")
+        a2 = a**2
+        nvtx.pop_range()
+        
+        nvtx.push_range("b")
+        b2 = a2 + b
+        nvtx.pop_range()
+        
+        nvtx.push_range("c")
+        c2 = b2 * c
+        nvtx.pop_range()
+        
+        nvtx.push_range("d")
+        d2 = c2 / d
+        nvtx.pop_range()
+        
+        nvtx.push_range("others")
+        d1 = d2 + e * f / g
+        nvtx.pop_range()
+        
+        device.synchronize()
