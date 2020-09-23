@@ -1,1 +1,10 @@
 # cupy_fused_kernel_sample
+
+This is an example to show that how to fuse the cupy kernel by cupy raw_kernel function (in fact, the cuda codes).
+
+The comparison under RTX 2080 ti:
+```bash
+[INFO] max relative difference: 3.5212665e-07
+[INFO] cupy time:       0.09795999999999999 ms
+[INFO] raw kernel time: 0.009000000000000001 ms
+```
