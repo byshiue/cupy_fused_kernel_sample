@@ -4,7 +4,7 @@ This is an example to show that how to fuse the cupy kernel by cupy raw_kernel f
 
 The comparison under RTX 2080 ti:
 ```bash
-[INFO] max relative difference: 3.5212665e-07
-[INFO] cupy time:       0.09795999999999999 ms
-[INFO] raw kernel time: 0.009000000000000001 ms
+[INFO] max relative difference: 3.4637577e-07
+[INFO] cupy time:       2.50198 ms
+[INFO] raw kernel time: 1.66084 ms
 ```
